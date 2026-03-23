@@ -1,6 +1,6 @@
 name: universal_ble_example
 description: Demonstrates how to use the universal_ble plugin.
-version: 1.1.0+2
+version: 1.2.0+2
 publish_to: "none"
 
 environment:

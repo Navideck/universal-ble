@@ -1,3 +1,7 @@
+## 1.2.0
+* Fix Duplicate keys found error in services list.
+* Show empty service message when there are no characteristics in a service.
+
 ## 1.1.0
 * **Services & Characteristics:**
   * Add property filtering for characteristics with visual filter chips
