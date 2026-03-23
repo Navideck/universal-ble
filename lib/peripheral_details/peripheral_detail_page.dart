@@ -8,6 +8,7 @@ import 'package:universal_ble/universal_ble.dart';
 import 'package:universal_ble_example/data/storage_service.dart';
 import 'package:universal_ble_example/data/utils.dart';
 import 'package:universal_ble_example/peripheral_details/widgets/result_header_bar.dart';
+import 'package:universal_ble_example/peripheral_details/utils/services_formatter.dart';
 import 'package:universal_ble_example/peripheral_details/widgets/result_widget.dart';
 import 'package:universal_ble_example/peripheral_details/widgets/services_list_widget.dart';
 import 'package:universal_ble_example/peripheral_details/widgets/services_side_widget.dart';
@@ -167,7 +168,7 @@ class _PeripheralDetailPageState extends State<PeripheralDetailPage> {
       () async {
         var services = await bleDevice.discoverServices(withDescriptors: false);
         debugPrint('${services.length} services discovered');
-        debugPrint(_formattedServices(services));
+        debugPrint(formatBleServices(services));
         setState(() {
           discoveredServices = services;
         });
@@ -178,7 +179,7 @@ class _PeripheralDetailPageState extends State<PeripheralDetailPage> {
         if (kIsWeb) {
           logMessage.write(',\n$webWarning');
         }
-        logMessage.write('\n\n${_formattedServices(services)}');
+        logMessage.write('\n\n${formatBleServices(services)}');
 
         _addLog("DiscoverServices", logMessage.toString());
       },
@@ -471,7 +472,7 @@ class _PeripheralDetailPageState extends State<PeripheralDetailPage> {
   }
 
   Future<void> _copyServicesToClipboard() async {
-    final servicesText = _formattedServices(discoveredServices);
+    final servicesText = formatBleServices(discoveredServices);
     await Clipboard.setData(
       ClipboardData(text: servicesText),
     );
@@ -488,24 +489,6 @@ class _PeripheralDetailPageState extends State<PeripheralDetailPage> {
         ),
       );
     }
-  }
-
-  String _formattedServices(List<BleService> services) {
-    final buffer = StringBuffer();
-    for (var service in services) {
-      buffer.writeln('Service: ${service.uuid}');
-      if (service.characteristics.isEmpty) {
-        buffer.writeln('  The service is empty');
-      } else {
-        for (var characteristic in service.characteristics) {
-          final properties =
-              characteristic.properties.map((p) => p.name).join(', ');
-          buffer.writeln('  ${characteristic.uuid} ($properties)');
-        }
-      }
-      buffer.writeln();
-    }
-    return buffer.toString().trim();
   }
 
   @override

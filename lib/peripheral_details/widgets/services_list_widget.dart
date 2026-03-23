@@ -168,6 +168,36 @@ class ServicesListWidgetState extends State<ServicesListWidget> {
     );
   }
 
+  List<BleCharacteristic> _getFilteredCharacteristicsForService(
+    BleService service,
+  ) {
+    if (widget.propertyFilters == null || widget.propertyFilters!.isEmpty) {
+      return service.characteristics;
+    }
+    return service.characteristics
+        .where(
+          (characteristic) => characteristic.properties
+              .any((prop) => widget.propertyFilters!.contains(prop)),
+        )
+        .toList();
+  }
+
+  Widget _buildEmptyServiceRow(ColorScheme colorScheme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 16.0,
+        vertical: 8.0,
+      ),
+      child: Text(
+        'The service is empty',
+        style: TextStyle(
+          color: colorScheme.onSurface.withValues(alpha: 0.6),
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+
   /// Returns a list of all filtered characteristics with their parent services
   List<({BleService service, BleCharacteristic characteristic})>
       getFilteredCharacteristics() {
@@ -280,15 +310,8 @@ class ServicesListWidgetState extends State<ServicesListWidget> {
         final isSelected = widget.selectedService?.uuid == service.uuid;
         final controller =
             _expandableControllers[service.uuid] ?? ExpansibleController();
-        final filteredCharacteristics = service.characteristics.where((e) {
-          // Filter by properties if filters are selected
-          if (widget.propertyFilters != null &&
-              widget.propertyFilters!.isNotEmpty) {
-            return e.properties
-                .any((prop) => widget.propertyFilters!.contains(prop));
-          }
-          return true;
-        }).toList();
+        final filteredCharacteristics =
+            _getFilteredCharacteristicsForService(service);
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
           child: Card(
@@ -351,31 +374,21 @@ class ServicesListWidgetState extends State<ServicesListWidget> {
                 ),
                 childrenPadding: const EdgeInsets.only(bottom: 8.0),
                 children: filteredCharacteristics.isEmpty
-                    ? [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16.0,
-                            vertical: 8.0,
-                          ),
-                          child: Text(
-                            'The service is empty',
-                            style: TextStyle(
-                              color: colorScheme.onSurface.withValues(alpha: 0.6),
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ]
-                    : filteredCharacteristics.asMap().entries.map((entry) {
-                        final charIndex = entry.key;
-                        final e = entry.value;
+                    ? [_buildEmptyServiceRow(colorScheme)]
+                    : (() {
+                        final characteristicOccurrences = <String, int>{};
+                        return filteredCharacteristics.map((e) {
+                          final sameUuidIndex =
+                              characteristicOccurrences[e.uuid] ?? 0;
+                          characteristicOccurrences[e.uuid] = sameUuidIndex + 1;
+
                         final isCharSelected =
                             widget.selectedCharacteristic?.uuid == e.uuid;
                         final isSubscribed =
                             widget.subscribedCharacteristics?[e.uuid] ?? false;
                         final charKey = _characteristicKeys[
                                 _charKeyId(service.uuid, e.uuid)]
-                            ?.elementAtOrNull(charIndex);
+                            ?.elementAtOrNull(sameUuidIndex);
                         return Padding(
                           key: charKey,
                           padding: const EdgeInsets.symmetric(
@@ -470,7 +483,8 @@ class ServicesListWidgetState extends State<ServicesListWidget> {
                             ),
                           ),
                         );
-                      }).toList(),
+                      }).toList();
+                    })(),
               ),
             ),
           ),
