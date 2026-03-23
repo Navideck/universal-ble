@@ -280,6 +280,15 @@ class ServicesListWidgetState extends State<ServicesListWidget> {
         final isSelected = widget.selectedService?.uuid == service.uuid;
         final controller =
             _expandableControllers[service.uuid] ?? ExpansibleController();
+        final filteredCharacteristics = service.characteristics.where((e) {
+          // Filter by properties if filters are selected
+          if (widget.propertyFilters != null &&
+              widget.propertyFilters!.isNotEmpty) {
+            return e.properties
+                .any((prop) => widget.propertyFilters!.contains(prop));
+          }
+          return true;
+        }).toList();
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
           child: Card(
@@ -341,119 +350,127 @@ class ServicesListWidgetState extends State<ServicesListWidget> {
                   ],
                 ),
                 childrenPadding: const EdgeInsets.only(bottom: 8.0),
-                children: service.characteristics.where((e) {
-                  // Filter by properties if filters are selected
-                  if (widget.propertyFilters != null &&
-                      widget.propertyFilters!.isNotEmpty) {
-                    return e.properties
-                        .any((prop) => widget.propertyFilters!.contains(prop));
-                  }
-                  return true;
-                }).toList().asMap().entries.map((entry) {
-                  final charIndex = entry.key;
-                  final e = entry.value;
-                  final isCharSelected =
-                      widget.selectedCharacteristic?.uuid == e.uuid;
-                  final isSubscribed =
-                      widget.subscribedCharacteristics?[e.uuid] ?? false;
-                  final charKey = _characteristicKeys[
-                          _charKeyId(service.uuid, e.uuid)]
-                      ?.elementAtOrNull(charIndex);
-                  return Padding(
-                    key: charKey,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8.0,
-                      vertical: 4.0,
-                    ),
-                    child: GestureDetector(
-                      onTap: () {
-                        widget.onTap?.call(service, e);
-                      },
-                      behavior: HitTestBehavior.opaque,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: isCharSelected
-                              ? selectedCharacteristicBackgroundColor
-                              : colorScheme.surfaceContainerHighest
-                                  .withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(8),
-                          border: isCharSelected
-                              ? Border.all(color: selectedColor, width: 1.5)
-                              : null,
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.arrow_right_outlined,
-                                    size: 16,
-                                    color: isCharSelected
-                                        ? selectedColor
-                                        : colorScheme.onSurface
-                                            .withValues(alpha: 0.6),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  if (isSubscribed) ...[
-                                    Icon(
-                                      Icons.notifications_active,
-                                      color: subscribedNotificationIconColor,
-                                      size: 16,
-                                    ),
-                                    const SizedBox(width: 4),
-                                  ],
-                                  Expanded(
-                                    child: Text(
-                                      e.uuid,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontFamily: 'monospace',
-                                        fontWeight: isCharSelected
-                                            ? FontWeight.bold
-                                            : FontWeight.w500,
-                                        color: isCharSelected
-                                            ? selectedColor
-                                            : colorScheme.onSurface,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 6,
-                                runSpacing: 6,
-                                children: e.properties.map((prop) {
-                                  return Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: colorScheme.secondaryContainer,
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      prop.name,
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        color: colorScheme.onSecondaryContainer,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                            ],
+                children: filteredCharacteristics.isEmpty
+                    ? [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16.0,
+                            vertical: 8.0,
+                          ),
+                          child: Text(
+                            'The service is empty',
+                            style: TextStyle(
+                              color: colorScheme.onSurface.withValues(alpha: 0.6),
+                              fontSize: 12,
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                  );
-                }).toList(),
+                      ]
+                    : filteredCharacteristics.asMap().entries.map((entry) {
+                        final charIndex = entry.key;
+                        final e = entry.value;
+                        final isCharSelected =
+                            widget.selectedCharacteristic?.uuid == e.uuid;
+                        final isSubscribed =
+                            widget.subscribedCharacteristics?[e.uuid] ?? false;
+                        final charKey = _characteristicKeys[
+                                _charKeyId(service.uuid, e.uuid)]
+                            ?.elementAtOrNull(charIndex);
+                        return Padding(
+                          key: charKey,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8.0,
+                            vertical: 4.0,
+                          ),
+                          child: GestureDetector(
+                            onTap: () {
+                              widget.onTap?.call(service, e);
+                            },
+                            behavior: HitTestBehavior.opaque,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: isCharSelected
+                                    ? selectedCharacteristicBackgroundColor
+                                    : colorScheme.surfaceContainerHighest
+                                        .withValues(alpha: 0.3),
+                                borderRadius: BorderRadius.circular(8),
+                                border: isCharSelected
+                                    ? Border.all(color: selectedColor, width: 1.5)
+                                    : null,
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(12.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.arrow_right_outlined,
+                                          size: 16,
+                                          color: isCharSelected
+                                              ? selectedColor
+                                              : colorScheme.onSurface
+                                                  .withValues(alpha: 0.6),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        if (isSubscribed) ...[
+                                          Icon(
+                                            Icons.notifications_active,
+                                            color: subscribedNotificationIconColor,
+                                            size: 16,
+                                          ),
+                                          const SizedBox(width: 4),
+                                        ],
+                                        Expanded(
+                                          child: Text(
+                                            e.uuid,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontFamily: 'monospace',
+                                              fontWeight: isCharSelected
+                                                  ? FontWeight.bold
+                                                  : FontWeight.w500,
+                                              color: isCharSelected
+                                                  ? selectedColor
+                                                  : colorScheme.onSurface,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Wrap(
+                                      spacing: 6,
+                                      runSpacing: 6,
+                                      children: e.properties.map((prop) {
+                                        return Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: colorScheme.secondaryContainer,
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: Text(
+                                            prop.name,
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: colorScheme.onSecondaryContainer,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
               ),
             ),
           ),

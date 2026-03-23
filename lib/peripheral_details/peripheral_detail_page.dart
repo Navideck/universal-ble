@@ -494,10 +494,14 @@ class _PeripheralDetailPageState extends State<PeripheralDetailPage> {
     final buffer = StringBuffer();
     for (var service in services) {
       buffer.writeln('Service: ${service.uuid}');
-      for (var characteristic in service.characteristics) {
-        final properties =
-            characteristic.properties.map((p) => p.name).join(', ');
-        buffer.writeln('  ${characteristic.uuid} ($properties)');
+      if (service.characteristics.isEmpty) {
+        buffer.writeln('  The service is empty');
+      } else {
+        for (var characteristic in service.characteristics) {
+          final properties =
+              characteristic.properties.map((p) => p.name).join(', ');
+          buffer.writeln('  ${characteristic.uuid} ($properties)');
+        }
       }
       buffer.writeln();
     }
