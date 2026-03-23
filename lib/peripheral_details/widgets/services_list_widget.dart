@@ -36,7 +36,10 @@ class ServicesListWidget extends StatefulWidget {
 class ServicesListWidgetState extends State<ServicesListWidget> {
   final Map<String, ExpansibleController> _expandableControllers = {};
   ScrollController? _scrollController;
-  final Map<String, GlobalKey> _characteristicKeys = {};
+  final Map<String, List<GlobalKey>> _characteristicKeys = {};
+
+  String _charKeyId(String serviceUuid, String characteristicUuid) =>
+      '$serviceUuid\_$characteristicUuid';
 
   @override
   void initState() {
@@ -107,7 +110,10 @@ class ServicesListWidgetState extends State<ServicesListWidget> {
 
       // Create keys for characteristics
       for (var char in service.characteristics) {
-        _characteristicKeys['${service.uuid}_${char.uuid}'] = GlobalKey();
+        final keyId = _charKeyId(service.uuid, char.uuid);
+        _characteristicKeys.putIfAbsent(keyId, () => <GlobalKey>[]).add(
+              GlobalKey(),
+            );
       }
     }
   }
@@ -120,9 +126,11 @@ class ServicesListWidgetState extends State<ServicesListWidget> {
 
     // Prefer an exact match on both service and characteristic UUIDs
     if (widget.selectedService != null) {
-      final exactKey =
-          '${widget.selectedService!.uuid}_${widget.selectedCharacteristic!.uuid}';
-      if (_characteristicKeys.containsKey(exactKey)) {
+      final exactKey = _charKeyId(
+        widget.selectedService!.uuid,
+        widget.selectedCharacteristic!.uuid,
+      );
+      if ((_characteristicKeys[exactKey]?.isNotEmpty ?? false)) {
         selectedKey = exactKey;
       }
     }
@@ -137,7 +145,7 @@ class ServicesListWidgetState extends State<ServicesListWidget> {
       }
     }
     if (selectedKey != null) {
-      final key = _characteristicKeys[selectedKey];
+      final key = _characteristicKeys[selectedKey]?.firstOrNull;
       if (key?.currentContext != null) {
         // Wait a bit for the expansion animation to complete
         Future.delayed(const Duration(milliseconds: 100), () {
@@ -341,13 +349,16 @@ class ServicesListWidgetState extends State<ServicesListWidget> {
                         .any((prop) => widget.propertyFilters!.contains(prop));
                   }
                   return true;
-                }).map((e) {
+                }).toList().asMap().entries.map((entry) {
+                  final charIndex = entry.key;
+                  final e = entry.value;
                   final isCharSelected =
                       widget.selectedCharacteristic?.uuid == e.uuid;
                   final isSubscribed =
                       widget.subscribedCharacteristics?[e.uuid] ?? false;
-                  final charKey =
-                      _characteristicKeys['${service.uuid}_${e.uuid}'];
+                  final charKey = _characteristicKeys[
+                          _charKeyId(service.uuid, e.uuid)]
+                      ?.elementAtOrNull(charIndex);
                   return Padding(
                     key: charKey,
                     padding: const EdgeInsets.symmetric(
