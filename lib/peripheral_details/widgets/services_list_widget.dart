@@ -39,7 +39,7 @@ class ServicesListWidgetState extends State<ServicesListWidget> {
   final Map<String, List<GlobalKey>> _characteristicKeys = {};
 
   String _charKeyId(String serviceUuid, String characteristicUuid) =>
-      '$serviceUuid\_$characteristicUuid';
+      '${serviceUuid}_$characteristicUuid';
 
   @override
   void initState() {
