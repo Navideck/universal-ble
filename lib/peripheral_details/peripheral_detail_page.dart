@@ -8,6 +8,7 @@ import 'package:universal_ble/universal_ble.dart';
 import 'package:universal_ble_example/data/storage_service.dart';
 import 'package:universal_ble_example/data/utils.dart';
 import 'package:universal_ble_example/peripheral_details/widgets/result_header_bar.dart';
+import 'package:universal_ble_example/peripheral_details/utils/advertisement_formatter.dart';
 import 'package:universal_ble_example/peripheral_details/utils/services_formatter.dart';
 import 'package:universal_ble_example/peripheral_details/widgets/result_widget.dart';
 import 'package:universal_ble_example/peripheral_details/widgets/services_list_widget.dart';
@@ -1208,32 +1209,29 @@ class _PeripheralDetailPageState extends State<PeripheralDetailPage> {
 
   Future<void> _copyReceivedAdvertisements() async {
     if (_receivedAdvertisements.isEmpty) return;
-    final lines = _receivedAdvertisements.reversed.map((ad) {
-      final ts = ad.timestampDateTime;
-      final timeStr = ts != null ? _formatAdTime(ts) : '—';
-      final rssiStr = ad.rssi?.toString() ?? '—';
-      final companyIdStr = _formatCompanyIdentifiers(ad);
-      final mfrStr = _formatManufacturerData(ad);
-      final svcStr = _formatServiceData(ad);
-      final advSvcStr = _formatAdvertisedServices(ad);
-      return 'Time: $timeStr  RSSI: $rssiStr  Company ID: $companyIdStr  Manufacturer Data: $mfrStr  Service Data: $svcStr  Advertised Services: $advSvcStr';
-    }).toList();
-    await Clipboard.setData(ClipboardData(text: lines.join('\n')));
+    final text = formatAdvertisementsForClipboard(
+      _receivedAdvertisements.reversed,
+      formatAdTime: _formatAdTime,
+      formatCompanyIdentifiers: _formatCompanyIdentifiers,
+      formatManufacturerData: _formatManufacturerData,
+      formatServiceData: _formatServiceData,
+      formatAdvertisedServices: _formatAdvertisedServices,
+    );
+    await Clipboard.setData(ClipboardData(text: text));
     if (mounted) {
       _showSnackBar('All advertisements copied to clipboard');
     }
   }
 
   Future<void> _copyAdvertisement(BleDevice ad) async {
-    final ts = ad.timestampDateTime;
-    final timeStr = ts != null ? _formatAdTime(ts) : '—';
-    final rssiStr = ad.rssi?.toString() ?? '—';
-    final companyIdStr = _formatCompanyIdentifiers(ad);
-    final mfrStr = _formatManufacturerData(ad);
-    final svcStr = _formatServiceData(ad);
-    final advSvcStr = _formatAdvertisedServices(ad);
-    final line =
-        'Time: $timeStr  RSSI: $rssiStr  Company ID: $companyIdStr  Manufacturer Data: $mfrStr  Service Data: $svcStr  Advertised Services: $advSvcStr';
+    final line = formatAdvertisementCopyLine(
+      ad,
+      formatAdTime: _formatAdTime,
+      formatCompanyIdentifiers: _formatCompanyIdentifiers,
+      formatManufacturerData: _formatManufacturerData,
+      formatServiceData: _formatServiceData,
+      formatAdvertisedServices: _formatAdvertisedServices,
+    );
     await Clipboard.setData(ClipboardData(text: line));
     if (mounted) {
       _showSnackBar('Advertisement copied to clipboard');
