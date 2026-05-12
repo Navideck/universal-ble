@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:universal_ble/universal_ble.dart';
 import 'package:universal_ble_example/data/company_identifier_service.dart';
 import 'package:universal_ble_example/data/gatt_server_storage.dart';
+import 'package:universal_ble_example/gatt_server/gatt_server_backup_actions.dart';
 import 'package:universal_ble_example/models/gatt_server_config.dart';
 
 class GattServerBuilderScreen extends StatefulWidget {
@@ -56,6 +57,53 @@ class _GattServerBuilderScreenState extends State<GattServerBuilderScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gatt Server Profiles'),
+        actions: [
+          PopupMenuButton<void>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'Import / export',
+            itemBuilder: (ctx) => [
+              PopupMenuItem<void>(
+                child: const Row(
+                  children: [
+                    Icon(Icons.download_outlined),
+                    SizedBox(width: 12),
+                    Text('Import from file…'),
+                  ],
+                ),
+                onTap: () {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    GattServerBackupActions.importProfilesFromFile(
+                      context,
+                      storage: _storage,
+                      onDone: _loadConfigs,
+                    );
+                  });
+                },
+              ),
+              PopupMenuItem<void>(
+                enabled: _configs.isNotEmpty,
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.upload_outlined,
+                      color:
+                          _configs.isEmpty ? Theme.of(ctx).disabledColor : null,
+                    ),
+                    const SizedBox(width: 12),
+                    const Text('Export to file…'),
+                  ],
+                ),
+                onTap: () {
+                  if (_configs.isEmpty) return;
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    GattServerBackupActions.exportProfilesToFile(
+                        context, _configs);
+                  });
+                },
+              ),
+            ],
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _isLoading ? null : () => _openEditor(),

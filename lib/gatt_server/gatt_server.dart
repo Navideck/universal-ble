@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:universal_ble_example/home/widgets/drawer.dart';
 import 'package:universal_ble_example/data/gatt_server_storage.dart';
+import 'package:universal_ble_example/gatt_server/gatt_server_backup_actions.dart';
 import 'package:universal_ble_example/gatt_server/gatt_server_builder_screen.dart';
 import 'package:universal_ble_example/models/gatt_server_config.dart';
 import 'package:universal_ble_example/gatt_server/gatt_server_runtime_screen.dart';
@@ -109,7 +110,7 @@ class _GattServerState extends State<GattServer> {
                 ElevatedButton.icon(
                   onPressed: _openGattServerBuilder,
                   icon: const Icon(Icons.add),
-                  label: const Text('Add Server'),
+                  label: const Text('Manage Profiles'),
                 )
               ],
             ),
@@ -138,7 +139,59 @@ class _GattServerState extends State<GattServer> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('GATT Server')),
+      appBar: AppBar(
+        title: const Text('GATT Server'),
+        actions: [
+          PopupMenuButton<void>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'Import / export',
+            itemBuilder: (ctx) => [
+              PopupMenuItem<void>(
+                child: const Row(
+                  children: [
+                    Icon(Icons.download_outlined),
+                    SizedBox(width: 12),
+                    Text('Import from file…'),
+                  ],
+                ),
+                onTap: () {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    GattServerBackupActions.importProfilesFromFile(
+                      context,
+                      storage: GattServerStorage.instance,
+                      onDone: _loadSavedConfigs,
+                    );
+                  });
+                },
+              ),
+              PopupMenuItem<void>(
+                enabled: _savedConfigs.isNotEmpty,
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.upload_outlined,
+                      color: _savedConfigs.isEmpty
+                          ? Theme.of(ctx).disabledColor
+                          : null,
+                    ),
+                    const SizedBox(width: 12),
+                    const Text('Export to file…'),
+                  ],
+                ),
+                onTap: () {
+                  if (_savedConfigs.isEmpty) return;
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    GattServerBackupActions.exportProfilesToFile(
+                      context,
+                      _savedConfigs,
+                    );
+                  });
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
       drawer: const AppDrawer(),
       body: body,
     );

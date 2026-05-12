@@ -46,6 +46,16 @@ class GattServerStorage {
     return null;
   }
 
+  Future<void> mergeImportedConfigs(List<GattServerConfig> incoming) async {
+    if (incoming.isEmpty) return;
+    final configs = await getConfigs();
+    final byId = <String, GattServerConfig>{for (final c in configs) c.id: c};
+    for (final c in incoming) {
+      byId[c.id] = c;
+    }
+    await _saveAll(byId.values.toList());
+  }
+
   Future<void> _saveAll(List<GattServerConfig> configs) async {
     final payload = jsonEncode(configs.map((e) => e.toJson()).toList());
     await prefsAsync.setString(_configsKey, payload);
