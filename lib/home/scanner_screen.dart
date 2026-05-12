@@ -122,8 +122,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
       final webServices =
           (await prefsAsync.getString('scan_filter_web_services')) ?? '';
       final scanOrderStr = await prefsAsync.getString('scan_order');
-      final savedFiltersJson =
-          await prefsAsync.getString('saved_scan_filters');
+      final savedFiltersJson = await prefsAsync.getString('saved_scan_filters');
       _savedFilters = SavedScanFilter.fromJsonList(savedFiltersJson);
       _savedFiltersNotifier.value = List.from(_savedFilters);
 
@@ -527,8 +526,12 @@ class _ScannerScreenState extends State<ScannerScreen> {
         },
         availabilityState: bleAvailabilityState,
         onAvailabilityStateChanged: (state) {
+          if (bleAvailabilityState == state) return;
+          bool isTurnedOnNow =
+              bleAvailabilityState == AvailabilityState.poweredOff &&
+                  state == AvailabilityState.poweredOn;
           setState(() => bleAvailabilityState = state);
-          if (state == AvailabilityState.poweredOn) {
+          if (isTurnedOnNow && _scanController?.isScanning != true) {
             _tryAutoStartScan();
           }
         },
@@ -617,14 +620,12 @@ class _ScannerScreenState extends State<ScannerScreen> {
                 ),
               ),
               style: FilledButton.styleFrom(
-                backgroundColor:
-                    _scanController?.isScanning == true
-                        ? colorScheme.error
-                        : colorScheme.primary,
-                foregroundColor:
-                    _scanController?.isScanning == true
-                        ? colorScheme.onError
-                        : colorScheme.onPrimary,
+                backgroundColor: _scanController?.isScanning == true
+                    ? colorScheme.error
+                    : colorScheme.primary,
+                foregroundColor: _scanController?.isScanning == true
+                    ? colorScheme.onError
+                    : colorScheme.onPrimary,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 12,
@@ -1004,9 +1005,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
                                   BleDevice device = _sortedDevices[index];
                                   return ScannedItemWidget(
                                     bleDevice: device,
-                                    adFlashTrigger:
-                                        _deviceAdFlashTrigger[device.deviceId] ??
-                                            0,
+                                    adFlashTrigger: _deviceAdFlashTrigger[
+                                            device.deviceId] ??
+                                        0,
                                     isExpanded:
                                         _isExpanded[device.deviceId] ?? false,
                                     onExpand: (isExpanded) {
