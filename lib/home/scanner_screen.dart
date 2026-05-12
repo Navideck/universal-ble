@@ -40,6 +40,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
   final TextEditingController _searchFilterController = TextEditingController();
   final TextEditingController _webServicesController = TextEditingController();
   StreamSubscription<BleDevice>? _scanSubscription;
+  StreamSubscription<AvailabilityState>? _availabilitySubscription;
 
   AvailabilityState? bleAvailabilityState;
   ScanFilter? scanFilter;
@@ -62,11 +63,10 @@ class _ScannerScreenState extends State<ScannerScreen> {
     _scanSubscription = UniversalBle.scanStream.listen(_handleScanResult);
 
     // Get initial Bluetooth availability state
-    UniversalBle.getBluetoothAvailabilityState().then((state) {
-      if (mounted) {
-        setState(() => bleAvailabilityState = state);
-      }
-    });
+    UniversalBle.getBluetoothAvailabilityState().then(_updateAvailabilityState);
+
+    _availabilitySubscription =
+        UniversalBle.availabilityStream.listen(_updateAvailabilityState);
 
     _loadScanFilters().then((_) {
       // Auto-start scanning after filters are loaded
@@ -80,6 +80,16 @@ class _ScannerScreenState extends State<ScannerScreen> {
     _searchFilterController.addListener(() {
       _saveScanFilters();
     });
+  }
+
+  void _updateAvailabilityState(AvailabilityState state) {
+    setState(() => bleAvailabilityState = state);
+    if (bleAvailabilityState == state) return;
+    bool isTurnedOnNow = bleAvailabilityState == AvailabilityState.poweredOff &&
+        state == AvailabilityState.poweredOn;
+    if (isTurnedOnNow && _scanController?.isScanning != true) {
+      _tryAutoStartScan();
+    }
   }
 
   void _handleScanResult(BleDevice result) {
@@ -504,8 +514,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
     _searchFilterController.dispose();
     _webServicesController.dispose();
     _savedFiltersNotifier.dispose();
-
     _scanSubscription?.cancel();
+    _availabilitySubscription?.cancel();
     super.dispose();
   }
 
@@ -525,16 +535,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
           });
         },
         availabilityState: bleAvailabilityState,
-        onAvailabilityStateChanged: (state) {
-          if (bleAvailabilityState == state) return;
-          bool isTurnedOnNow =
-              bleAvailabilityState == AvailabilityState.poweredOff &&
-                  state == AvailabilityState.poweredOn;
-          setState(() => bleAvailabilityState = state);
-          if (isTurnedOnNow && _scanController?.isScanning != true) {
-            _tryAutoStartScan();
-          }
-        },
+        showBluetoothStateIcon: true,
       ),
       appBar: AppBar(
         title: Row(

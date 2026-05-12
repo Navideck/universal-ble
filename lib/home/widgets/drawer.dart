@@ -12,14 +12,14 @@ class AppDrawer extends StatefulWidget {
   final QueueType? queueType;
   final Function(QueueType)? onQueueTypeChanged;
   final AvailabilityState? availabilityState;
-  final void Function(AvailabilityState)? onAvailabilityStateChanged;
+  final bool showBluetoothStateIcon;
 
   const AppDrawer({
     super.key,
     this.queueType,
     this.onQueueTypeChanged,
     this.availabilityState,
-    this.onAvailabilityStateChanged,
+    this.showBluetoothStateIcon = false,
   });
 
   @override
@@ -68,12 +68,9 @@ class _AppDrawerState extends State<AppDrawer> {
               ),
             ),
           ),
-          if (widget.availabilityState != null &&
-              widget.onAvailabilityStateChanged != null)
+          if (widget.availabilityState != null && widget.showBluetoothStateIcon)
             ListTile(
-              leading: BleAvailabilityIcon(
-                onAvailabilityStateChanged: widget.onAvailabilityStateChanged!,
-              ),
+              leading: BleAvailabilityIcon(onAvailabilityStateChanged: (_) {}),
               title: Text(
                   _getBluetoothAvailabilityLabel(widget.availabilityState!)),
             ),
