@@ -39,6 +39,7 @@ class _GattServerRuntimeScreenState extends State<GattServerRuntimeScreen> {
   bool _bulkServiceMutation = false;
   bool _supportsPeripheralMode = false;
   bool _isCheckingReadiness = true;
+  AvailabilityState? _availabilityState;
   PeripheralReadinessState? _readinessState;
   PeripheralAdvertisingState _advertisingState =
       PeripheralAdvertisingState.idle;
@@ -188,15 +189,18 @@ class _GattServerRuntimeScreenState extends State<GattServerRuntimeScreen> {
     final supportsPeripheralMode =
         (await UniversalBlePeripheral.getCapabilities()).supportsPeripheralMode;
     final readiness = await UniversalBlePeripheral.getAvailabilityState();
+    final availabilityState =
+        await UniversalBle.getBluetoothAvailabilityState();
     if (!mounted) return;
     setState(() {
+      _availabilityState = availabilityState;
       _supportsPeripheralMode = supportsPeripheralMode;
       _readinessState = readiness;
       _isCheckingReadiness = false;
     });
     if (logResult) {
       _log(
-          'Peripheral ready check. supported=$supportsPeripheralMode readiness=${readiness.name}');
+          'Peripheral ready check. supported=$supportsPeripheralMode readiness=${readiness.name} availability=${availabilityState.name}');
     }
     await _refreshServiceStatuses();
   }
@@ -922,6 +926,15 @@ class _GattServerRuntimeScreenState extends State<GattServerRuntimeScreen> {
     Widget body;
     if (_isLoadingConfig || _isCheckingReadiness || _readinessState == null) {
       body = const Center(child: CircularProgressIndicator());
+    } else if (_readinessState == PeripheralReadinessState.bluetoothOff ||
+        _availabilityState == AvailabilityState.poweredOff) {
+      body = _buildReadinessPlaceholder(
+        icon: Icons.bluetooth_disabled,
+        title: 'Bluetooth is Off',
+        description:
+            'Turn on Bluetooth to use this GATT server. This screen updates automatically.',
+        iconColor: colorScheme.error,
+      );
     } else if (!_supportsPeripheralMode ||
         _readinessState == PeripheralReadinessState.unsupported) {
       body = _buildReadinessPlaceholder(
@@ -930,14 +943,6 @@ class _GattServerRuntimeScreenState extends State<GattServerRuntimeScreen> {
         description:
             'This device does not support acting as a BLE peripheral server.',
         iconColor: colorScheme.outline,
-      );
-    } else if (_readinessState == PeripheralReadinessState.bluetoothOff) {
-      body = _buildReadinessPlaceholder(
-        icon: Icons.bluetooth_disabled,
-        title: 'Bluetooth is Off',
-        description:
-            'Turn on Bluetooth to use this GATT server. This screen updates automatically.',
-        iconColor: colorScheme.error,
       );
     } else if (_readinessState == PeripheralReadinessState.unauthorized) {
       body = _buildReadinessPlaceholder(
