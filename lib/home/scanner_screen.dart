@@ -40,6 +40,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
   final TextEditingController _searchFilterController = TextEditingController();
   final TextEditingController _webServicesController = TextEditingController();
   StreamSubscription<BleDevice>? _scanSubscription;
+  StreamSubscription<AvailabilityState>? _availabilitySubscription;
 
   AvailabilityState? bleAvailabilityState;
   ScanFilter? scanFilter;
@@ -62,11 +63,10 @@ class _ScannerScreenState extends State<ScannerScreen> {
     _scanSubscription = UniversalBle.scanStream.listen(_handleScanResult);
 
     // Get initial Bluetooth availability state
-    UniversalBle.getBluetoothAvailabilityState().then((state) {
-      if (mounted) {
-        setState(() => bleAvailabilityState = state);
-      }
-    });
+    UniversalBle.getBluetoothAvailabilityState().then(_updateAvailabilityState);
+
+    _availabilitySubscription =
+        UniversalBle.availabilityStream.listen(_updateAvailabilityState);
 
     _loadScanFilters().then((_) {
       // Auto-start scanning after filters are loaded
@@ -80,6 +80,18 @@ class _ScannerScreenState extends State<ScannerScreen> {
     _searchFilterController.addListener(() {
       _saveScanFilters();
     });
+  }
+
+  void _updateAvailabilityState(AvailabilityState state) {
+    if (!mounted) return;
+    final previousState = bleAvailabilityState;
+    if (previousState == state) return;
+    setState(() => bleAvailabilityState = state);
+    bool isTurnedOnNow = previousState == AvailabilityState.poweredOff &&
+        state == AvailabilityState.poweredOn;
+    if (isTurnedOnNow && _scanController?.isScanning != true) {
+      _tryAutoStartScan();
+    }
   }
 
   void _handleScanResult(BleDevice result) {
@@ -122,8 +134,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
       final webServices =
           (await prefsAsync.getString('scan_filter_web_services')) ?? '';
       final scanOrderStr = await prefsAsync.getString('scan_order');
-      final savedFiltersJson =
-          await prefsAsync.getString('saved_scan_filters');
+      final savedFiltersJson = await prefsAsync.getString('saved_scan_filters');
       _savedFilters = SavedScanFilter.fromJsonList(savedFiltersJson);
       _savedFiltersNotifier.value = List.from(_savedFilters);
 
@@ -505,8 +516,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
     _searchFilterController.dispose();
     _webServicesController.dispose();
     _savedFiltersNotifier.dispose();
-
     _scanSubscription?.cancel();
+    _availabilitySubscription?.cancel();
     super.dispose();
   }
 
@@ -526,12 +537,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
           });
         },
         availabilityState: bleAvailabilityState,
-        onAvailabilityStateChanged: (state) {
-          setState(() => bleAvailabilityState = state);
-          if (state == AvailabilityState.poweredOn) {
-            _tryAutoStartScan();
-          }
-        },
+        showBluetoothStateIcon: true,
       ),
       appBar: AppBar(
         title: Row(
@@ -617,14 +623,12 @@ class _ScannerScreenState extends State<ScannerScreen> {
                 ),
               ),
               style: FilledButton.styleFrom(
-                backgroundColor:
-                    _scanController?.isScanning == true
-                        ? colorScheme.error
-                        : colorScheme.primary,
-                foregroundColor:
-                    _scanController?.isScanning == true
-                        ? colorScheme.onError
-                        : colorScheme.onPrimary,
+                backgroundColor: _scanController?.isScanning == true
+                    ? colorScheme.error
+                    : colorScheme.primary,
+                foregroundColor: _scanController?.isScanning == true
+                    ? colorScheme.onError
+                    : colorScheme.onPrimary,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 12,
@@ -1004,9 +1008,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
                                   BleDevice device = _sortedDevices[index];
                                   return ScannedItemWidget(
                                     bleDevice: device,
-                                    adFlashTrigger:
-                                        _deviceAdFlashTrigger[device.deviceId] ??
-                                            0,
+                                    adFlashTrigger: _deviceAdFlashTrigger[
+                                            device.deviceId] ??
+                                        0,
                                     isExpanded:
                                         _isExpanded[device.deviceId] ?? false,
                                     onExpand: (isExpanded) {

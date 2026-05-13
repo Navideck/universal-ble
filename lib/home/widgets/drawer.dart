@@ -5,20 +5,21 @@ import 'package:universal_ble/universal_ble.dart';
 import 'package:universal_ble_example/home/widgets/ble_availability_icon.dart';
 import 'package:universal_ble_example/home/scanner_screen.dart';
 import 'package:universal_ble_example/home/system_devices_screen.dart';
+import 'package:universal_ble_example/gatt_server/gatt_server.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AppDrawer extends StatefulWidget {
   final QueueType? queueType;
   final Function(QueueType)? onQueueTypeChanged;
   final AvailabilityState? availabilityState;
-  final void Function(AvailabilityState)? onAvailabilityStateChanged;
+  final bool showBluetoothStateIcon;
 
   const AppDrawer({
     super.key,
     this.queueType,
     this.onQueueTypeChanged,
     this.availabilityState,
-    this.onAvailabilityStateChanged,
+    this.showBluetoothStateIcon = false,
   });
 
   @override
@@ -67,13 +68,11 @@ class _AppDrawerState extends State<AppDrawer> {
               ),
             ),
           ),
-          if (widget.availabilityState != null &&
-              widget.onAvailabilityStateChanged != null)
+          if (widget.availabilityState != null && widget.showBluetoothStateIcon)
             ListTile(
-              leading: BleAvailabilityIcon(
-                onAvailabilityStateChanged: widget.onAvailabilityStateChanged!,
-              ),
-              title: Text(_getBluetoothAvailabilityLabel(widget.availabilityState!)),
+              leading: BleAvailabilityIcon(onAvailabilityStateChanged: (_) {}),
+              title: Text(
+                  _getBluetoothAvailabilityLabel(widget.availabilityState!)),
             ),
           ListTile(
             leading: const Icon(Icons.search),
@@ -86,6 +85,12 @@ class _AppDrawerState extends State<AppDrawer> {
               title: const Text('System Devices'),
               onTap: () =>
                   _navigateToScreen(context, const SystemDevicesScreen()),
+            ),
+          if (BleCapabilities.supportsPeripheralApi)
+            ListTile(
+              leading: const Icon(Icons.bluetooth_searching),
+              title: const Text('GATT Server'),
+              onTap: () => _navigateToScreen(context, const GattServer()),
             ),
           if (widget.queueType != null && widget.onQueueTypeChanged != null)
             ExpansionTile(
@@ -137,8 +142,9 @@ class _AppDrawerState extends State<AppDrawer> {
             builder: (_, snapshot) {
               final theme = Theme.of(context);
               final bodyStyle = theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface,
-              ) ?? TextStyle(color: theme.colorScheme.onSurface);
+                    color: theme.colorScheme.onSurface,
+                  ) ??
+                  TextStyle(color: theme.colorScheme.onSurface);
               final linkStyle = bodyStyle.copyWith(
                 color: theme.colorScheme.primary,
                 decoration: TextDecoration.underline,
@@ -184,7 +190,8 @@ class _AppDrawerState extends State<AppDrawer> {
                           style: linkStyle,
                           recognizer: TapGestureRecognizer()
                             ..onTap = () {
-                              launchUrl(Uri.parse('https://navideck.com/contact'));
+                              launchUrl(
+                                  Uri.parse('https://navideck.com/contact'));
                             },
                         ),
                       ],

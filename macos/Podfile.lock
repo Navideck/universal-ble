@@ -1,4 +1,6 @@
 PODS:
+  - file_picker (0.0.1):
+    - FlutterMacOS
   - FlutterMacOS (1.0.0)
   - package_info_plus (0.0.1):
     - FlutterMacOS
@@ -12,6 +14,7 @@ PODS:
     - FlutterMacOS
 
 DEPENDENCIES:
+  - file_picker (from `Flutter/ephemeral/.symlinks/plugins/file_picker/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
   - package_info_plus (from `Flutter/ephemeral/.symlinks/plugins/package_info_plus/macos`)
   - shared_preferences_foundation (from `Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/darwin`)
@@ -19,6 +22,8 @@ DEPENDENCIES:
   - url_launcher_macos (from `Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos`)
 
 EXTERNAL SOURCES:
+  file_picker:
+    :path: Flutter/ephemeral/.symlinks/plugins/file_picker/macos
   FlutterMacOS:
     :path: Flutter/ephemeral
   package_info_plus:
@@ -31,11 +36,12 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos
 
 SPEC CHECKSUMS:
+  file_picker: e716a70a9fe5fd9e09ebc922d7541464289443af
   FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
-  package_info_plus: f0052d280d17aa382b932f399edf32507174e870
-  shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
-  universal_ble: 45519b2aeafe62761e2c6309f8927edb5288b914
-  url_launcher_macos: f87a979182d112f911de6820aefddaf56ee9fbfd
+  package_info_plus: 12f1c5c2cfe8727ca46cbd0b26677728972d9a5b
+  shared_preferences_foundation: 5086985c1d43c5ba4d5e69a4e8083a389e2909e6
+  universal_ble: d0c3d7347d16c82746288e13ed2f1368ecf8e716
+  url_launcher_macos: 175a54c831f4375a6cf895875f716ee5af3888ce
 
 PODFILE CHECKSUM: 9ebaf0ce3d369aaa26a9ea0e159195ed94724cf3
 
