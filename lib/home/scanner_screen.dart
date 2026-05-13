@@ -83,9 +83,11 @@ class _ScannerScreenState extends State<ScannerScreen> {
   }
 
   void _updateAvailabilityState(AvailabilityState state) {
+    if (!mounted) return;
+    final previousState = bleAvailabilityState;
+    if (previousState == state) return;
     setState(() => bleAvailabilityState = state);
-    if (bleAvailabilityState == state) return;
-    bool isTurnedOnNow = bleAvailabilityState == AvailabilityState.poweredOff &&
+    bool isTurnedOnNow = previousState == AvailabilityState.poweredOff &&
         state == AvailabilityState.poweredOn;
     if (isTurnedOnNow && _scanController?.isScanning != true) {
       _tryAutoStartScan();

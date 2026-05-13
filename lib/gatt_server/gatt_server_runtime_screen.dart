@@ -22,6 +22,7 @@ class GattServerRuntimeScreen extends StatefulWidget {
 }
 
 class _GattServerRuntimeScreenState extends State<GattServerRuntimeScreen> {
+  static const int _maxLogEntries = 500;
   final List<String> _logs = <String>[];
   final ScrollController _logsScrollController = ScrollController();
 
@@ -208,6 +209,9 @@ class _GattServerRuntimeScreenState extends State<GattServerRuntimeScreen> {
   void _log(String text) {
     setState(() {
       _logs.add(text);
+      if (_logs.length > _maxLogEntries) {
+        _logs.removeRange(0, _logs.length - _maxLogEntries);
+      }
     });
   }
 

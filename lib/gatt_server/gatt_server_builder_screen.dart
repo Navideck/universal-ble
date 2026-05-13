@@ -237,58 +237,63 @@ class _GattServerEditorScreenState extends State<GattServerEditorScreen> {
   Future<BlePeripheralService?> _showServiceDialog() async {
     final uuidController = TextEditingController();
     bool primary = true;
-    return showDialog<BlePeripheralService>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setStateDialog) {
-          return AlertDialog(
-            title: const Text('Add Service'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: uuidController,
-                  decoration: const InputDecoration(labelText: 'Service UUID'),
+    try {
+      return await showDialog<BlePeripheralService>(
+        context: context,
+        builder: (context) => StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Add Service'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: uuidController,
+                    decoration:
+                        const InputDecoration(labelText: 'Service UUID'),
+                  ),
+                  const SizedBox(height: 8),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: primary,
+                    onChanged: (value) => setStateDialog(() => primary = value),
+                    title: const Text('Primary'),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
                 ),
-                const SizedBox(height: 8),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  value: primary,
-                  onChanged: (value) => setStateDialog(() => primary = value),
-                  title: const Text('Primary'),
+                FilledButton(
+                  onPressed: () {
+                    if (uuidController.text.trim().isEmpty) return;
+                    try {
+                      final normalizedUuid =
+                          BleUuidParser.string(uuidController.text.trim());
+                      Navigator.pop(
+                        context,
+                        BlePeripheralService(
+                          uuid: normalizedUuid,
+                          primary: primary,
+                          characteristics: const [],
+                        ),
+                      );
+                    } on FormatException {
+                      _showSnackbar('Invalid Service UUID');
+                    }
+                  },
+                  child: const Text('Add'),
                 ),
               ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                onPressed: () {
-                  if (uuidController.text.trim().isEmpty) return;
-                  try {
-                    final normalizedUuid =
-                        BleUuidParser.string(uuidController.text.trim());
-                    Navigator.pop(
-                      context,
-                      BlePeripheralService(
-                        uuid: normalizedUuid,
-                        primary: primary,
-                        characteristics: const [],
-                      ),
-                    );
-                  } on FormatException {
-                    _showSnackbar('Invalid Service UUID');
-                  }
-                },
-                child: const Text('Add'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
+            );
+          },
+        ),
+      );
+    } finally {
+      uuidController.dispose();
+    }
   }
 
   Future<BlePeripheralCharacteristic?> _showCharacteristicDialog() async {
@@ -297,235 +302,245 @@ class _GattServerEditorScreenState extends State<GattServerEditorScreen> {
     final selectedProperties = <CharacteristicProperty>{};
     final selectedPermissions = <PeripheralAttributePermission>{};
 
-    return showDialog<BlePeripheralCharacteristic>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setStateDialog) {
-          return AlertDialog(
-            title: const Text('Add Characteristic'),
-            content: SizedBox(
-              width: 520,
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: uuidController,
-                      decoration: const InputDecoration(
-                        labelText: 'Characteristic UUID',
+    try {
+      return await showDialog<BlePeripheralCharacteristic>(
+        context: context,
+        builder: (context) => StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Add Characteristic'),
+              content: SizedBox(
+                width: 520,
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextField(
+                        controller: uuidController,
+                        decoration: const InputDecoration(
+                          labelText: 'Characteristic UUID',
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Properties',
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
-                    Wrap(
-                      spacing: 6,
-                      children: CharacteristicProperty.values
-                          .map(
-                            (property) => FilterChip(
-                              selected: selectedProperties.contains(property),
-                              label: Text(property.name),
-                              onSelected: (selected) {
-                                setStateDialog(() {
-                                  if (selected) {
-                                    selectedProperties.add(property);
-                                  } else {
-                                    selectedProperties.remove(property);
-                                  }
-                                });
-                              },
-                            ),
-                          )
-                          .toList(),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Permissions',
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
-                    Wrap(
-                      spacing: 6,
-                      children: PeripheralAttributePermission.values
-                          .map(
-                            (permission) => FilterChip(
-                              selected:
-                                  selectedPermissions.contains(permission),
-                              label: Text(permission.name),
-                              onSelected: (selected) {
-                                setStateDialog(() {
-                                  if (selected) {
-                                    selectedPermissions.add(permission);
-                                  } else {
-                                    selectedPermissions.remove(permission);
-                                  }
-                                });
-                              },
-                            ),
-                          )
-                          .toList(),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: initialValueController,
-                      decoration: const InputDecoration(
-                        labelText: 'Initial Value (hex bytes, optional)',
-                        hintText: '01 FF 0A',
+                      const SizedBox(height: 12),
+                      Text(
+                        'Properties',
+                        style: Theme.of(context).textTheme.titleSmall,
                       ),
-                    ),
-                  ],
+                      Wrap(
+                        spacing: 6,
+                        children: CharacteristicProperty.values
+                            .map(
+                              (property) => FilterChip(
+                                selected: selectedProperties.contains(property),
+                                label: Text(property.name),
+                                onSelected: (selected) {
+                                  setStateDialog(() {
+                                    if (selected) {
+                                      selectedProperties.add(property);
+                                    } else {
+                                      selectedProperties.remove(property);
+                                    }
+                                  });
+                                },
+                              ),
+                            )
+                            .toList(),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Permissions',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      Wrap(
+                        spacing: 6,
+                        children: PeripheralAttributePermission.values
+                            .map(
+                              (permission) => FilterChip(
+                                selected:
+                                    selectedPermissions.contains(permission),
+                                label: Text(permission.name),
+                                onSelected: (selected) {
+                                  setStateDialog(() {
+                                    if (selected) {
+                                      selectedPermissions.add(permission);
+                                    } else {
+                                      selectedPermissions.remove(permission);
+                                    }
+                                  });
+                                },
+                              ),
+                            )
+                            .toList(),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: initialValueController,
+                        decoration: const InputDecoration(
+                          labelText: 'Initial Value (hex bytes, optional)',
+                          hintText: '01 FF 0A',
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                onPressed: () {
-                  if (uuidController.text.trim().isEmpty) return;
-                  try {
-                    final normalizedUuid =
-                        BleUuidParser.string(uuidController.text.trim());
-                    final initialBytes =
-                        _parseHexBytes(initialValueController.text);
-                    if (initialBytes.isNotEmpty) {
-                      const writeLike = {
-                        CharacteristicProperty.write,
-                        CharacteristicProperty.writeWithoutResponse,
-                        CharacteristicProperty.authenticatedSignedWrites,
-                      };
-                      if (selectedProperties.any(writeLike.contains)) {
-                        _showSnackbar(
-                          'On Apple platforms, an initial value makes the '
-                          'characteristic read-only. Clear the initial value or '
-                          'remove write-related properties.',
-                        );
-                        return;
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    if (uuidController.text.trim().isEmpty) return;
+                    try {
+                      final normalizedUuid =
+                          BleUuidParser.string(uuidController.text.trim());
+                      final initialBytes =
+                          _parseHexBytes(initialValueController.text);
+                      if (initialBytes.isNotEmpty) {
+                        const writeLike = {
+                          CharacteristicProperty.write,
+                          CharacteristicProperty.writeWithoutResponse,
+                          CharacteristicProperty.authenticatedSignedWrites,
+                        };
+                        if (selectedProperties.any(writeLike.contains)) {
+                          _showSnackbar(
+                            'On Apple platforms, an initial value makes the '
+                            'characteristic read-only. Clear the initial value or '
+                            'remove write-related properties.',
+                          );
+                          return;
+                        }
                       }
+                      Navigator.pop(
+                        context,
+                        BlePeripheralCharacteristic(
+                          uuid: normalizedUuid,
+                          properties: selectedProperties.toList(),
+                          permissions: selectedPermissions.toList(),
+                          value: initialBytes.isEmpty
+                              ? null
+                              : Uint8List.fromList(initialBytes),
+                        ),
+                      );
+                    } on FormatException {
+                      _showSnackbar('Invalid Characteristic UUID');
                     }
-                    Navigator.pop(
-                      context,
-                      BlePeripheralCharacteristic(
-                        uuid: normalizedUuid,
-                        properties: selectedProperties.toList(),
-                        permissions: selectedPermissions.toList(),
-                        value: initialBytes.isEmpty
-                            ? null
-                            : Uint8List.fromList(initialBytes),
-                      ),
-                    );
-                  } on FormatException {
-                    _showSnackbar('Invalid Characteristic UUID');
-                  }
-                },
-                child: const Text('Add'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
+                  },
+                  child: const Text('Add'),
+                ),
+              ],
+            );
+          },
+        ),
+      );
+    } finally {
+      uuidController.dispose();
+      initialValueController.dispose();
+    }
   }
 
   Future<BlePeripheralDescriptor?> _showDescriptorDialog() async {
     final uuidController = TextEditingController();
     final initialValueController = TextEditingController();
     final selectedPermissions = <PeripheralAttributePermission>{};
-    return showDialog<BlePeripheralDescriptor>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setStateDialog) {
-          return AlertDialog(
-            title: const Text('Add Descriptor'),
-            content: SizedBox(
-              width: 520,
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: uuidController,
-                      decoration: const InputDecoration(
-                        labelText: 'Descriptor UUID',
+    try {
+      return await showDialog<BlePeripheralDescriptor>(
+        context: context,
+        builder: (context) => StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Add Descriptor'),
+              content: SizedBox(
+                width: 520,
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextField(
+                        controller: uuidController,
+                        decoration: const InputDecoration(
+                          labelText: 'Descriptor UUID',
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Permissions',
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
-                    Wrap(
-                      spacing: 6,
-                      children: PeripheralAttributePermission.values
-                          .map(
-                            (permission) => FilterChip(
-                              selected:
-                                  selectedPermissions.contains(permission),
-                              label: Text(permission.name),
-                              onSelected: (selected) {
-                                setStateDialog(() {
-                                  if (selected) {
-                                    selectedPermissions.add(permission);
-                                  } else {
-                                    selectedPermissions.remove(permission);
-                                  }
-                                });
-                              },
-                            ),
-                          )
-                          .toList(),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: initialValueController,
-                      decoration: const InputDecoration(
-                        labelText: 'Initial Value (hex bytes, optional)',
-                        hintText: '00 01',
+                      const SizedBox(height: 12),
+                      Text(
+                        'Permissions',
+                        style: Theme.of(context).textTheme.titleSmall,
                       ),
-                    ),
-                  ],
+                      Wrap(
+                        spacing: 6,
+                        children: PeripheralAttributePermission.values
+                            .map(
+                              (permission) => FilterChip(
+                                selected:
+                                    selectedPermissions.contains(permission),
+                                label: Text(permission.name),
+                                onSelected: (selected) {
+                                  setStateDialog(() {
+                                    if (selected) {
+                                      selectedPermissions.add(permission);
+                                    } else {
+                                      selectedPermissions.remove(permission);
+                                    }
+                                  });
+                                },
+                              ),
+                            )
+                            .toList(),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: initialValueController,
+                        decoration: const InputDecoration(
+                          labelText: 'Initial Value (hex bytes, optional)',
+                          hintText: '00 01',
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                onPressed: () {
-                  if (uuidController.text.trim().isEmpty) return;
-                  try {
-                    final normalizedUuid =
-                        BleUuidParser.string(uuidController.text.trim());
-                    final initialBytes =
-                        _parseHexBytes(initialValueController.text);
-                    Navigator.pop(
-                      context,
-                      BlePeripheralDescriptor(
-                        uuid: normalizedUuid,
-                        permissions: selectedPermissions.toList(),
-                        value: initialBytes.isEmpty
-                            ? null
-                            : Uint8List.fromList(initialBytes),
-                      ),
-                    );
-                  } on FormatException {
-                    _showSnackbar('Invalid Descriptor UUID');
-                  }
-                },
-                child: const Text('Add'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    if (uuidController.text.trim().isEmpty) return;
+                    try {
+                      final normalizedUuid =
+                          BleUuidParser.string(uuidController.text.trim());
+                      final initialBytes =
+                          _parseHexBytes(initialValueController.text);
+                      Navigator.pop(
+                        context,
+                        BlePeripheralDescriptor(
+                          uuid: normalizedUuid,
+                          permissions: selectedPermissions.toList(),
+                          value: initialBytes.isEmpty
+                              ? null
+                              : Uint8List.fromList(initialBytes),
+                        ),
+                      );
+                    } on FormatException {
+                      _showSnackbar('Invalid Descriptor UUID');
+                    }
+                  },
+                  child: const Text('Add'),
+                ),
+              ],
+            );
+          },
+        ),
+      );
+    } finally {
+      uuidController.dispose();
+      initialValueController.dispose();
+    }
   }
 
   Future<void> _saveProfile() async {
