@@ -13,6 +13,7 @@ class MockUniversalBle extends UniversalBlePlatform {
   );
 
   Uint8List _serviceValue = utf8.encode('Result');
+  Uint8List _descriptorValue = utf8.encode('Result');
   bool _isScanning = false;
 
   final BleService _mockService = BleService('180a', [
@@ -51,8 +52,12 @@ class MockUniversalBle extends UniversalBlePlatform {
   }
 
   @override
-  Future<void> connect(String deviceId,
-      {bool autoConnect = false, Duration? connectionTimeout}) async {
+  Future<void> connect(
+    String deviceId, {
+    bool autoConnect = false,
+    Duration? connectionTimeout,
+    ConnectionPlatformConfig? platformConfig,
+  }) async {
     updateConnection(deviceId, true);
     _connectionStateMap[deviceId] = BleConnectionState.connected;
   }
@@ -105,6 +110,30 @@ class MockUniversalBle extends UniversalBlePlatform {
       BleOutputProperty bleOutputProperty) async {
     await Future.delayed(const Duration(milliseconds: 500));
     _serviceValue = value;
+  }
+
+  @override
+  Future<Uint8List> readDescriptorValue(
+    String deviceId,
+    String service,
+    String characteristic,
+    String descriptor, {
+    Duration? timeout,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return _descriptorValue;
+  }
+
+  @override
+  Future<void> writeDescriptorValue(
+    String deviceId,
+    String service,
+    String characteristic,
+    String descriptor,
+    Uint8List value,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    _descriptorValue = value;
   }
 
   @override
