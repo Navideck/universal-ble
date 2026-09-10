@@ -6,7 +6,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:universal_ble_example/data/gatt_server_config_codec.dart';
 import 'package:universal_ble_example/data/gatt_server_storage.dart';
-import 'package:universal_ble_example/gatt_server/profile_files/gatt_server_profile_files.dart';
 import 'package:universal_ble_example/models/gatt_server_config.dart';
 
 /// File-based import / export for saved GATT server profiles (JSON).
@@ -60,19 +59,16 @@ abstract final class GattServerBackupActions {
     required VoidCallback onDone,
   }) async {
     if (!context.mounted) return;
-    final result = await FilePicker.pickFiles(
+    final file = await FilePicker.pickFile(
       dialogTitle: 'Import GATT profiles',
       type: FileType.custom,
       allowedExtensions: const ['json'],
-      allowMultiple: false,
-      withData: true,
     );
     if (!context.mounted) return;
-    if (result == null || result.files.isEmpty) return;
+    if (file == null) return;
 
-    final file = result.files.single;
-    final String? raw = await _readPickedUtf8(file);
-    if (raw == null || raw.trim().isEmpty) {
+    final String raw = utf8.decode(await file.readAsBytes());
+    if (raw.trim().isEmpty) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -85,20 +81,6 @@ abstract final class GattServerBackupActions {
     }
     if (!context.mounted) return;
     await _applyImport(context, storage: storage, raw: raw, onDone: onDone);
-  }
-
-  static Future<String?> _readPickedUtf8(PlatformFile file) async {
-    if (file.bytes != null) {
-      return utf8.decode(file.bytes!);
-    }
-    if (file.path != null && !kIsWeb) {
-      try {
-        return await readUtf8File(file.path!);
-      } catch (_) {
-        return null;
-      }
-    }
-    return null;
   }
 
   static Future<void> _applyImport(

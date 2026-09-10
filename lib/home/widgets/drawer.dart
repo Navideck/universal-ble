@@ -231,6 +231,8 @@ class _AppDrawerState extends State<AppDrawer> {
         return 'Per Device';
       case QueueType.none:
         return 'None';
+      case QueueType.auto:
+        return 'Auto';
     }
   }
 
